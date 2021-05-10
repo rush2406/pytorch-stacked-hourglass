@@ -1,52 +1,35 @@
-# pytorch-stacked-hourglass
+# Stacked Hourglass Network for Human pose estimation
 
-This is a fork of [bearpaw/pytorch-pose](https://github.com/bearpaw/pytorch-pose) which is modified
-for use as a Python package.
+Stacked hourglass networks have been very popular for human pose estimation. The proposed structure involves stacking 8 hourglasses. The hourglass has an encoder-decoder structure thus effectively combining local and global level information. Furthermore, intermediate supervision has been used between the hourglasses.
 
+## Dataset
 
-## Usage
+We have used the MPII dataset. It can be downloaded from [here](http://human-pose.mpi-inf.mpg.de/#download).
 
-This library is designed to make including human pose estimation into an application as simple
-as possible. Here's an example:
+## Modifications
 
-```python
-from stacked_hourglass import HumanPosePredictor, hg2
+As part of our assignment, we tried to perform some modifications to reduce the training & inference time while maintaining comparable accuracy to the original 8-stacks hourglass model. The modifications and observed results can be summarized as follows (run for 50 epochs on the hardware mentioned below) - 
 
-# ...load image of a person into a PyTorch tensor...
-
-model = hg2(pretrained=True)
-predictor = HumanPosePredictor(model, device='cpu')
-joints = predictor.estimate_joints(my_image_tensor, flip=True)
-```
-
-`joints` will be a 16x2 tensor representing joint locations in input image space.
-The joints are ordered according to the MPII Human Pose dataset:
-
-```python
-from stacked_hourglass.datasets.mpii import MPII_JOINT_NAMES
-
-for i, name in enumerate(MPII_JOINT_NAMES):
-    print(i, name)
-
-# 0 right_ankle   # 4 left_knee     # 8 neck            # 12 right_shoulder
-# 1 right_knee    # 5 left_ankle    # 9 head_top        # 13 left_shoulder
-# 2 right_hip     # 6 pelvis        # 10 right_wrist    # 14 left_elbow
-# 3 left_hip      # 7 spine         # 11 right_elbow    # 15 left_wrist
-
-print('Right elbow location: ', joints[MPII_JOINT_NAMES.index('right_elbow')])
-```
-
+| Model         | Training Time (min/epoch) | Validation accuracy  | Inference time (min)
+| ------------- |---------------------------| ---------------------| ---------------------|
+| 1) original      | 18             | 83.18                |  1.2             |
+| 2) 64 channels      | 14.3             | 80.48                |  1.03             |
+| 3) 6 stacks      | 14.4             | 83.13                |  1.05             |
+| 4) 6 stacks 64 channels 4 residual blocks      | 14.3             | 80.73                |  1.08             |
+| 5) 8 stacks 64 channels, instance norm      | 14.7             | 78.83                |  1.1             |
+| 6) 8 stacks, depth [2x3,3x3,4x2] 64 channels     | 14.3             | 80.68                |  1.1             |
+| 7) 8 stacks, depth [4x2,3x4,2x2] 64 channels     | 14.8             | 81.47                |  1.15             |
+| 8) 4 blocks {of Conv, ReLU, BatchNorm } in each bottleneck module      | 14.6             | 84.23                |  1.06   |
 
 ## Example scripts
 
 
 ### Evaluation on the MPII validation set
 
-Here's a quick example of evaluating the pretrained 2-stack hourglass model on the MPII Human
-Pose validation set.
+Architecture can be hg1, hg2, hg8.
 
 ```bash
-$ python scripts/evaluate_mpii.py --arch=hg2 --image-path=/path/to/mpii/images
+$ python scripts/evaluate_mpii.py --arch=hg2 --image-path=/path/to/mpii/images --model-file=/path/to/saved/model_checkpoint
 ```
 
 Output:
@@ -59,6 +42,7 @@ Final validation PCKh scores:
  96.15       94.89    88.14    83.78  87.43   82.19    77.87   87.33
 ```
 
+Along with the PCKh values, we've provided code to visualize the predicted joints as well in the evaluate_mpii.py
 
 ### Train an 8-stack hourglass model
 
@@ -67,9 +51,19 @@ $ python scripts/train_mpii.py \
     --arch=hg8 \
     --image-path=/path/to/mpii/images \
     --checkpoint=checkpoint/hg8 \
-    --epochs=220 \
+    --epochs=50 \
     --train-batch=6 \
     --test-batch=6 \
     --lr=5e-4 \
     --schedule 150 175 200
+    --case=1
+    --optim=adam
 ```
+
+#### To run our modifications - 
+
+Use --case flag and specify case number as shown in table above. In addition, we've added a flag --optim to use Adam or RMSProp for optimizer.
+
+### Hardware used
+
+This code has been run on a single Quadro RTX 6000 GPU with Python 3.8.8, PyTorch 1.8.1 and Torchvision 0.9.1

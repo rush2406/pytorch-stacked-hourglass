@@ -67,3 +67,5 @@ Use --case flag and specify case number as shown in table above. In addition, we
 ### Hardware used
 
 This code has been run on a single Quadro RTX 6000 GPU with Python 3.8.8, PyTorch 1.8.1 and Torchvision 0.9.1
+
+### A detailed analysis report can also be found [here](https://github.com/rush2406/pytorch-stacked-hourglass/blob/master/Assigment-Report.pdf)

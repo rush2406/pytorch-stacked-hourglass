@@ -34,14 +34,17 @@ def main(args):
     elif args.arch == 'hg2':
         model = hg2(pretrained=False)
     elif args.arch == 'hg8':
-        model = hg8(pretrained=False)
+        model = hg8(pretrained=False,case=args.case)
     else:
         raise Exception('unrecognised model architecture: ' + args.arch)
-
+    
     model = DataParallel(model).to(device)
 
-    optimizer = RMSprop(model.parameters(), lr=args.lr, momentum=args.momentum,
-                        weight_decay=args.weight_decay)
+    optimizer = RMSprop(model.parameters(), lr=args.lr, momentum=args.momentum,weight_decay=args.weight_decay)
+
+    if args.optim=='adam':
+        print('using adam')
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr,weight_decay=args.weight_decay)
 
     best_acc = 0
 
@@ -78,6 +81,7 @@ def main(args):
 
     # train and eval
     lr = args.lr
+    token = 0
     for epoch in trange(args.start_epoch, args.epochs, desc='Overall', ascii=True):
         lr = adjust_learning_rate(optimizer, epoch, lr, args.schedule, args.gamma)
 
@@ -102,6 +106,13 @@ def main(args):
 
         # remember best acc and save checkpoint
         is_best = valid_acc > best_acc
+        if is_best:
+                token = 0
+        elif token>=5:
+                print('')
+                #break
+        else:
+                token = token + 1
         best_acc = max(valid_acc, best_acc)
         save_checkpoint({
             'epoch': epoch + 1,
@@ -154,5 +165,9 @@ if __name__ == '__main__':
                         help='save models for every #snapshot epochs (default: 0)')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
                         help='path to latest checkpoint (default: none)')
+    parser.add_argument('--case', default=1, type=int, metavar='C',
+                        help='case number as defined in report')
+    parser.add_argument('--optim', default='rms', type=str, metavar='O',
+                        help='rms or adam')
 
     main(parser.parse_args())

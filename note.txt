@@ -1,0 +1,12 @@
+All modification related to architecture are in pytorch-stacked-hourglass/src/stacked_hourglassmodel.py file
+
+To run the modifications we made to the architecture, we've added 2 flags, --case and --optim, which can be used as folllows -
+
+python scripts/train_mpii.py     --arch=hg8     --image-path=images     --checkpoint=checkpoint/hg_trial     --epochs=1     --train-batch=20     --test-batch=20     --lr=5e-4     --schedule 150 175 200 --case=8 --optim=adam
+
+--case can be used to select the particular modification with numbering as mentioned in the Table 1 in report.
+By default, it executes the original architecture
+
+--optim can be used to select adam. By default, it uses RMSProp. However, RMSProp seemed to give better results.
+
+

@@ -1,5 +1,7 @@
 import argparse
 import os.path
+import cv2
+import numpy as np
 
 import torch
 import torch.backends.cudnn
@@ -56,8 +58,17 @@ def main(args):
     _, _, predictions = do_validation_epoch(val_loader, model, device, Mpii.DATA_INFO, args.flip)
 
     # Report PCKh for the predictions.
+    array = predictions[0].detach().cpu().numpy()
     print('\nFinal validation PCKh scores:\n')
     print_mpii_validation_accuracy(predictions)
+
+    image = cv2.imread('images/005808361.jpg')
+
+    for i in range(len(array)):
+        x = int(array[i][0])
+        y = int(array[i][1])
+        image = cv2.circle(image, (x,y), radius=5, color=(0, 0, 255), thickness=-1)
+    cv2.imwrite('out.jpg',image)
 
 
 if __name__ == '__main__':
